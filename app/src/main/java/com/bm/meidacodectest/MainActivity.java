@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private AudioPlayer mAudioPlayer;
     private String mPath;
+    private int a;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
