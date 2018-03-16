@@ -31,8 +31,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button btnPlayAudio = findViewById(R.id.btn_play_audio);
-        Button btnStopAudio = findViewById(R.id.btn_stop_audio);
+        Button btnPlayAudio = (Button) findViewById(R.id.btn_play_audio);
+        Button btnStopAudio = (Button) findViewById(R.id.btn_stop_audio);
 
         btnPlayAudio.setOnClickListener(this);
         btnStopAudio.setOnClickListener(this);
