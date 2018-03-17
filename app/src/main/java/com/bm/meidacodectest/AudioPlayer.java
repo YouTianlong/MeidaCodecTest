@@ -45,6 +45,10 @@ public class AudioPlayer {
         return b;
     }
 
+    public boolean startPlayer(){
+        return startPlayer(DEFAULT_STRAM_TYPE, DEFAULT_SIMPLE_RATE, DEFAULT_CHANNE_CONFIG, DEFAULT_AUDIO_FORMAT);
+    }
+
     private boolean startPlayer(int streamType, int simpleRateInHz, int channeConfig, int audioFormat) {
         if (isPlayStarted) {
             Log.e(TAG, "player is already started !");

@@ -16,13 +16,14 @@ import java.nio.ByteBuffer;
 public class MediaCoedecEncoder {
 
     private static final String TAG = MediaCoedecEncoder.class.getSimpleName() + "@:";
-    String AUDIO_MIME = "audio/mp4a-latm";
+    private String AUDIO_MIME = "audio/mp4a-latm";
     private static final int DEFAULT_MAX_BUFFER_SIZE = 16384;
-    MediaCodec mediaCodec;
+    private MediaCodec mediaCodec;
     private boolean mIsOpened = false;
+    private OnAudioEncodedListener mAudioEncodedListener;
 
-    public boolean open(){
-        if (mIsOpened){
+    public boolean open() {
+        if (mIsOpened) {
             return true;
         }
         try {
@@ -30,9 +31,9 @@ public class MediaCoedecEncoder {
             MediaFormat format = new MediaFormat();
             format.setString(MediaFormat.KEY_MIME, AUDIO_MIME);
             // TODO  CHANNEL_OUT_STEREO ? CHANNEL_IN_STEREO
-            format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, AudioFormat.CHANNEL_OUT_STEREO);
+            format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 1);
             format.setInteger(MediaFormat.KEY_SAMPLE_RATE, 44100);
-            format.setInteger(MediaFormat.KEY_BIT_RATE,128*1000);
+            format.setInteger(MediaFormat.KEY_BIT_RATE, 128 * 1000);
             format.setInteger(MediaFormat.KEY_AAC_PROFILE,
                     MediaCodecInfo.CodecProfileLevel.AACObjectLC);
             format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, DEFAULT_MAX_BUFFER_SIZE);
@@ -40,7 +41,8 @@ public class MediaCoedecEncoder {
             mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
             mediaCodec.start();
-        }catch (IOException e) {
+            mIsOpened = true;
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
@@ -49,9 +51,9 @@ public class MediaCoedecEncoder {
         return true;
     }
 
-    public void close(){
-        Log.e(TAG,"close audio encoder + ");
-        if (!mIsOpened){
+    public void close() {
+        Log.e(TAG, "close audio encoder + ");
+        if (!mIsOpened) {
             return;
         }
 
@@ -59,16 +61,16 @@ public class MediaCoedecEncoder {
         mediaCodec.release();
         mediaCodec = null;
         mIsOpened = false;
-        Log.e(TAG,"close audio encoder -");
+        Log.e(TAG, "close audio encoder -");
     }
 
 
-    public boolean isOpened(){
+    public boolean isOpened() {
         return mIsOpened;
     }
 
-    public synchronized boolean encodePCMToAAC(byte[] bytes,long presentationTimeUs) {
-        Log.e(TAG, "encode: " + presentationTimeUs);
+    public synchronized boolean encodePCMToAAC(byte[] bytes, long presentationTimeUs) {
+        Log.e(TAG, "encode length: " + bytes.length);
         if (!mIsOpened) {
             return false;
         }
@@ -82,7 +84,7 @@ public class MediaCoedecEncoder {
                 inputBuffer.put(bytes);
                 mediaCodec.queueInputBuffer(inputBufferIndex, 0, bytes.length, presentationTimeUs, 0);
             }
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             throwable.printStackTrace();
             return false;
         }
@@ -90,7 +92,7 @@ public class MediaCoedecEncoder {
         return false;
     }
 
-    public synchronized boolean retrieve(){
+    public synchronized boolean retrieve() {
         Log.e(TAG, "encode retrieve +");
         if (!mIsOpened) {
             return false;
@@ -106,16 +108,25 @@ public class MediaCoedecEncoder {
                 outputBuffer.limit(bufferInfo.offset + bufferInfo.size);
                 byte[] frame = new byte[bufferInfo.size];
                 outputBuffer.get(frame, 0, bufferInfo.size);
-//                if (mAudioEncodedListener != null) {
-//                    mAudioEncodedListener.onFrameEncoded(frame, bufferInfo.presentationTimeUs);
-//                }
+                if (mAudioEncodedListener != null) {
+                    mAudioEncodedListener.onFrameEncoded(frame, bufferInfo.presentationTimeUs);
+                }
+                mediaCodec.releaseOutputBuffer(outputBufferIndex, false);
             }
 
-        }catch (Throwable throwable){
+        } catch (Throwable throwable) {
             throwable.printStackTrace();
             return false;
         }
         Log.e(TAG, "encode retrieve -");
         return true;
+    }
+
+    public void setAudioEncodedListener(OnAudioEncodedListener listener) {
+        this.mAudioEncodedListener = listener;
+    }
+
+    public interface OnAudioEncodedListener {
+        void onFrameEncoded(byte[] encoded, long presentationTimeUs);
     }
 }
