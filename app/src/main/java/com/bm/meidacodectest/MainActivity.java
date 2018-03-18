@@ -24,8 +24,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, MediaCoedecEncoder.OnAudioEncodedListener, MediaCodecDecoder.AudioDecodedListener, SurfaceHolder.Callback {
-
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, MediaCoedecEncoder.OnAudioEncodedListener, MediaCodecDecoder.AudioDecodedListener, SurfaceHolder.Callback, Camera.PreviewCallback {
 
     private AudioPlayer mAudioPlayer;
     private String mPath;
@@ -41,16 +40,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         Button btnPlayAudio = (Button) findViewById(R.id.btn_play_audio);
         Button btnStopAudio = (Button) findViewById(R.id.btn_stop_audio);
+        Button btn_take_photo = (Button) findViewById(R.id.btn_take_photo);
         Button btn_codec_encode_pcm = (Button) findViewById(R.id.btn_codec_encode_pcm);
         SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surface_view);
-        surfaceView.getHolder().addCallback(this);
+//        surfaceView.getHolder().addCallback(this);
 
         btnPlayAudio.setOnClickListener(this);
         btnStopAudio.setOnClickListener(this);
         btn_codec_encode_pcm.setOnClickListener(this);
+        btn_take_photo.setOnClickListener(this);
 
         mAudioPlayer = new AudioPlayer();
-
+        VideoEncoder videoEncoder = new VideoEncoder();
     }
 
     @Override
@@ -85,6 +86,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     new Thread(new Decoder()).start();
                 }
+                break;
+            case R.id.btn_take_photo:
+                mCamera.takePicture(null, null, new Camera.PictureCallback() {
+                    @Override
+                    public void onPictureTaken(byte[] data, Camera camera) {
+                        Log.e("youtl:", "onPictureTaken+");
+                        // 讲data写入sd卡保存为一个Jpeg图片
+                        String path = Environment.getExternalStorageDirectory() + "/takephone.jpg";
+                        FileOutputStream fileOutputStream = null;
+                        try {
+                            fileOutputStream = new FileOutputStream(path);
+                            fileOutputStream.write(data);
+                            Log.e("youtl:", "onPictureTaken -");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        } finally {
+                            try {
+                                fileOutputStream.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                });
                 break;
             default:
                 break;
@@ -121,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             e.printStackTrace();
         }
         mCamera.setDisplayOrientation(90);
+        mCamera.setPreviewCallback(this);
         mCamera.startPreview();
     }
 
@@ -132,11 +158,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Log.e("youtl;", "surfaceDestroyed");
-        mCamera.stopPreview();
         if (mCamera != null) {
+            mCamera.stopPreview();
             mCamera.release();
             mCamera = null;
         }
+    }
+
+    @Override
+    public void onPreviewFrame(byte[] data, Camera camera) {
+        Log.e("youtl:", "预览的数据" + data.length);
     }
 
     private class Decoder implements Runnable {
