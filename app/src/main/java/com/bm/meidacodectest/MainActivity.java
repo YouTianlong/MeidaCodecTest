@@ -32,6 +32,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean readingFile;
     private MediaCodecDecoder mediaCodecDecoder;
     private Camera mCamera;
+    private VideoEncoder videoEncoder;
+    private byte[] mH264 = new byte[460800];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Button btn_take_photo = (Button) findViewById(R.id.btn_take_photo);
         Button btn_codec_encode_pcm = (Button) findViewById(R.id.btn_codec_encode_pcm);
         SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surface_view);
-//        surfaceView.getHolder().addCallback(this);
+        surfaceView.getHolder().addCallback(this);
 
         btnPlayAudio.setOnClickListener(this);
         btnStopAudio.setOnClickListener(this);
@@ -51,7 +53,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btn_take_photo.setOnClickListener(this);
 
         mAudioPlayer = new AudioPlayer();
-        VideoEncoder videoEncoder = new VideoEncoder();
     }
 
     @Override
@@ -140,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // 初始化camera
         Log.e("youtl;", "surfaceCreated");
         mCamera = Camera.open();
+        videoEncoder = new VideoEncoder();
         try {
             mCamera.setPreviewDisplay(holder);
         } catch (IOException e) {
@@ -168,6 +170,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
         Log.e("youtl:", "预览的数据" + data.length);
+        int count = videoEncoder.offerEncoder(data, mH264);
+        if (count > 0){
+            Log.e("youtl：","h254 :" + mH264.length);
+        }
     }
 
     private class Decoder implements Runnable {
